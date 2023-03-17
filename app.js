@@ -1,50 +1,66 @@
 // declare global variable
-let video = null; // video element
-let detector = null; // detector object
-let detections = []; // store detection result
-let videoVisibility = true;
-let detecting = false;
+let video = null // video element
+let detector = null // detector object
+let detections = [] // store detection result
+let videoVisibility = true
+let detecting = false
+let canvas
 
 // global HTML element
-const toggleVideoEl = document.getElementById('toggleVideoEl');
-const toggleDetectingEl = document.getElementById('toggleDetectingEl');
+const toggleVideoEl = document.getElementById('toggleVideoEl')
+const toggleDetectingEl = document.getElementById('toggleDetectingEl')
+const labelEl = document.getElementById('label')
 
 // set cursor to wait until video elment is loaded
-document.body.style.cursor = 'wait';
+document.body.style.cursor = 'wait'
 
 // The preload() function if existed is called before the setup() function
 function preload() {
-  // create detector object from "cocossd" model
-  detector = ml5.objectDetector('cocossd');
-  console.log('detector object is loaded');
+  const detectionOptions = {
+    withLandmarks: true,
+    withDescriptors: false,
+  }
+  // Initialize the magicFeature
+  detector = ml5.faceApi(detectionOptions, modelLoaded)
+}
+// When the model is loaded
+function modelLoaded() {
+  console.log('Model Loaded!')
+
+  // Make some sparkles
+  faceapi.detect(myImage, (err, results) => {
+    console.log(results)
+  })
 }
 
 // The setup() function is called once when the program starts.
 function setup() {
   // create canvas element with 640 width and 480 height in pixel
-  createCanvas(640, 480);
+  canvas = createCanvas(640, 480)
   // Creates a new HTML5 <video> element that contains the audio/video feed from a webcam.
   // The element is separate from the canvas and is displayed by default.
-  video = createCapture(VIDEO);
-  video.size(640, 480);
-  console.log('video element is created');
-  video.elt.addEventListener('loadeddata', function() {
+  video = createCapture(VIDEO)
+  video.size(640, 480)
+  console.log('video element is created')
+  video.elt.addEventListener('loadeddata', function () {
     // set cursor back to default
     if (video.elt.readyState >= 2) {
-      document.body.style.cursor = 'default';
-      console.log('video element is ready! Click "Start Detecting" to see the magic!');
+      document.body.style.cursor = 'default'
+      console.log(
+        'video element is ready! Click "Start Detecting" to see the magic!'
+      )
     }
-  });
+  })
 }
 
 // the draw() function continuously executes until the noLoop() function is called
 function draw() {
-  if (!video || !detecting) return;
+  if (!video || !detecting) return
   // draw video frame to canvas and place it at the top-left corner
-  image(video, 0, 0);
+  image(video, 0, 0)
   // draw all detected objects to the canvas
   for (let i = 0; i < detections.length; i++) {
-    drawResult(detections[i]);
+    drawResult(detections[i])
   }
 }
 
@@ -60,72 +76,88 @@ Exaple of an detect object
 }
 */
 function drawResult(object) {
-  drawBoundingBox(object);
-  drawLabel(object);
+  drawBoundingBox(object)
+  drawLabel(object)
 }
 
 // draw bounding box around the detected object
 function drawBoundingBox(object) {
   // Sets the color used to draw lines.
-  stroke('green');
+  stroke('green')
   // width of the stroke
-  strokeWeight(4);
+  strokeWeight(4)
   // Disables filling geometry
-  noFill();
+  noFill()
   // draw an rectangle
   // x and y are the coordinates of upper-left corner, followed by width and height
-  rect(object.x, object.y, object.width, object.height);
+  rect(object.x, object.y, object.width, object.height)
 }
 
 // draw label of the detected object (inside the box)
 function drawLabel(object) {
   // Disables drawing the stroke
-  noStroke();
+  noStroke()
   // sets the color used to fill shapes
-  fill('white');
+  fill('white')
   // set font size
-  textSize(24);
+  textSize(24)
   // draw string to canvas
-  text(object.label, object.x + 10, object.y + 24);
+  text(object.label, object.x + 10, object.y + 24)
 }
 
 // callback function. it is called when object is detected
 function onDetected(error, results) {
   if (error) {
-    console.error(error);
+    console.error(error)
   }
-  detections = results;
+  detections = results
+
+  // Face detected, hide canvas
+  if (detections.length > 0) {
+    hideVieoElAfterDetected()
+  }
+
   // keep detecting object
   if (detecting) {
-    detect(); 
+    detect()
   }
 }
 
 function detect() {
   // instruct "detector" object to start detect object from video element
   // and "onDetected" function is called when object is detected
-  detector.detect(video, onDetected);
+  detector.detect(video, onDetected)
 }
 
 function toggleVideo() {
-  if (!video) return;
+  if (!video) return
   if (videoVisibility) {
-    video.hide();
-    toggleVideoEl.innerText = 'Show Video';
+    video.hide()
+    toggleVideoEl.innerText = 'Show Video'
   } else {
-    video.show();
-    toggleVideoEl.innerText = 'Hide Video';
+    video.show()
+    toggleVideoEl.innerText = 'Hide Video'
   }
-  videoVisibility = !videoVisibility;
+  videoVisibility = !videoVisibility
+}
+
+// Main
+function hideVieoElAfterDetected() {
+  canvas.hide()
+  toggleDetecting()
+  labelEl.style.display = ''
+  labelEl.innerText = 'Face Detected !!!'
 }
 
 function toggleDetecting() {
-  if (!video || !detector) return;
+  if (!video || !detector) return
   if (!detecting) {
-    detect();
-    toggleDetectingEl.innerText = 'Stop Detecting';
+    detect()
+    canvas.show()
+    labelEl.style.display = 'none'
+    labelEl.innerText = ''
   } else {
-    toggleDetectingEl.innerText = 'Start Detecting';
+    toggleDetectingEl.innerText = 'Start Detecting'
   }
-  detecting = !detecting;
+  detecting = !detecting
 }
